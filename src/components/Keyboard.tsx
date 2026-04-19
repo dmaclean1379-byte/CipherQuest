@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { memo } from 'react';
 import { motion } from 'motion/react';
-import { Delete } from 'lucide-react';
 
 const ROWS = [
   'QWERTYUIOP'.split(''),
@@ -17,7 +17,7 @@ interface KeyboardProps {
   onDelete: () => void;
 }
 
-export default function Keyboard({ onKey, onDelete }: KeyboardProps) {
+const Keyboard = memo(({ onKey, onDelete }: KeyboardProps) => {
   return (
     <div className="w-full bg-kb-bg p-2 md:p-3 pt-3 md:pt-4 flex flex-col gap-1.5 md:gap-2 h-[200px] md:h-[220px] box-border border-t border-muted/30 shrink-0">
       {ROWS.map((row, i) => (
@@ -45,4 +45,6 @@ export default function Keyboard({ onKey, onDelete }: KeyboardProps) {
       ))}
     </div>
   );
-}
+});
+
+export default Keyboard;

@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { RefreshCw, Lightbulb, Trophy, Brain, BarChart3 } from 'lucide-react';
+import { RefreshCw, Lightbulb, Trophy, Brain, BarChart3, X, Film, Music, Lightbulb as FactIcon, Quote, Palette, Check } from 'lucide-react';
 import { GameState, PuzzleCell, UserStats } from './types';
 import { createPuzzle, DEFAULT_QUOTES } from './services/puzzleService';
 import { generateAIQuote } from './services/geminiService';
@@ -16,6 +16,9 @@ export default function App() {
   const [game, setGame] = useState<GameState | null>(null);
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showCategories, setShowCategories] = useState(false);
+  const [showThemes, setShowThemes] = useState(false);
+  const [theme, setTheme] = useState(() => localStorage.getItem('cipher-quest-theme') || 'theme-quest');
   const [feedback, setFeedback] = useState<string | null>(null);
   const [stats, setStats] = useState<UserStats>(() => {
     const saved = localStorage.getItem('cipher-quest-stats');
@@ -26,16 +29,28 @@ export default function App() {
     localStorage.setItem('cipher-quest-stats', JSON.stringify(stats));
   }, [stats]);
 
-  const startNewGame = useCallback(async (useAI = false) => {
+  useEffect(() => {
+    localStorage.setItem('cipher-quest-theme', theme);
+    // Apply theme to document root to ensure all variables cascade correctly
+    const root = document.documentElement;
+    root.classList.forEach(cls => {
+      if (cls.startsWith('theme-')) root.classList.remove(cls);
+    });
+    root.classList.add(theme);
+  }, [theme]);
+
+  const startNewGame = useCallback(async (useAI = false, category?: string) => {
     setIsLoading(true);
-    // If resetting from a solved state, we don't clear until we have the new one to prevent flicker
-    // except when solving.
+    setShowCategories(false);
     setFeedback(null);
     try {
       let quoteData;
       if (useAI) {
-        quoteData = await generateAIQuote();
-      } else {
+        quoteData = await generateAIQuote(category);
+      }
+      
+      // Fallback to internal quotes if AI fails or wasn't requested
+      if (!quoteData) {
         quoteData = DEFAULT_QUOTES[Math.floor(Math.random() * DEFAULT_QUOTES.length)];
       }
       
@@ -165,18 +180,18 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [game?.isSolved, updateGuess, removeGuess]);
 
-  const focusedCell = game?.cells.find(c => c.id === focusedId);
-  const selectedNumber = focusedCell?.number || null;
+  const focusedCell = useMemo(() => game?.cells.find(c => c.id === focusedId), [game?.cells, focusedId]);
+  const selectedNumber = useMemo(() => focusedCell?.number || null, [focusedCell]);
 
-  const checkStatus = (cell: PuzzleCell): boolean | null => {
+  const checkStatus = useCallback((cell: PuzzleCell): boolean | null => {
     if (cell.isPunctuation || !cell.userGuess) return null;
     return cell.userGuess === cell.realLetter;
-  };
+  }, []);
 
   return (
-    <div className="h-[100dvh] flex flex-col bg-bg-app select-none overflow-hidden">
+    <div className={`h-[100dvh] flex flex-col bg-bg-app select-none overflow-hidden pb-[env(safe-area-inset-bottom)] ${theme}`}>
       {/* Header */}
-      <header className="px-4 md:px-10 py-3 md:py-4 flex items-center justify-between border-b border-border bg-surface shrink-0 z-20">
+      <header className="px-4 md:px-10 py-3 md:py-4 flex items-center justify-between border-b border-border bg-surface shrink-0 z-20 pt-[env(safe-area-inset-top)]">
         <div className="flex items-center gap-2">
           <h1 className="text-xl md:text-2xl font-extrabold tracking-tight text-accent">
             CipherQuest
@@ -184,6 +199,12 @@ export default function App() {
         </div>
         
         <div className="flex gap-1.5 md:gap-3">
+          <button
+            onClick={() => setShowThemes(true)}
+            className="btn-base px-3 h-9 md:h-10 border border-border bg-surface text-secondary hover:bg-bg-app flex items-center gap-1.5 text-xs md:text-sm"
+          >
+            <Palette size={14} />
+          </button>
           <button
             onClick={() => startNewGame(false)}
             disabled={isLoading}
@@ -201,7 +222,7 @@ export default function App() {
             Hint
           </button>
           <button
-            onClick={() => startNewGame(true)}
+            onClick={() => setShowCategories(true)}
             disabled={isLoading}
             className="btn-base px-3 h-9 md:h-10 border border-accent text-accent hover:bg-accent-light flex items-center gap-1.5 disabled:opacity-50 text-xs md:text-sm"
           >
@@ -210,6 +231,128 @@ export default function App() {
           </button>
         </div>
       </header>
+
+      {/* Category Selector Popup */}
+      <AnimatePresence>
+        {showCategories && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowCategories(false)}
+              className="absolute inset-0 bg-primary/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-sm bg-surface rounded-2xl shadow-2xl border border-border p-6 overflow-hidden"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <Brain size={20} className="text-accent" />
+                  <h2 className="text-lg font-bold text-primary">Choose Category</h2>
+                </div>
+                <button 
+                  onClick={() => setShowCategories(false)}
+                  className="p-1.5 hover:bg-bg-app rounded-full text-muted transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pb-2">
+                {[
+                  { id: 'Quote', icon: Quote, label: 'Quotes' },
+                  { id: 'Movie Title', icon: Film, label: 'Movies' },
+                  { id: 'Song Title', icon: Music, label: 'Songs' },
+                  { id: 'Fun Fact', icon: FactIcon, label: 'Facts' },
+                ].map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => startNewGame(true, cat.id)}
+                    className="flex flex-col items-center justify-center p-4 bg-surface border border-border rounded-xl hover:border-accent hover:bg-accent-light group transition-all"
+                  >
+                    <cat.icon size={24} className="text-muted group-hover:text-accent mb-2" />
+                    <span className="text-xs font-bold text-secondary group-hover:text-accent">{cat.label}</span>
+                  </button>
+                ))}
+              </div>
+              
+              <p className="mt-4 text-center text-[10px] text-muted font-medium uppercase tracking-widest">
+                AI Powered Generation
+              </p>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Theme Selector Popup */}
+      <AnimatePresence>
+        {showThemes && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowThemes(false)}
+              className="absolute inset-0 bg-primary/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className={`relative w-full max-w-sm bg-surface rounded-2xl shadow-2xl border border-border p-6 overflow-hidden ${theme}`}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <Palette size={20} className="text-accent" />
+                  <h2 className="text-lg font-bold text-primary">Visual Themes</h2>
+                </div>
+                <button 
+                  onClick={() => setShowThemes(false)}
+                  className="p-1.5 hover:bg-bg-app rounded-full text-muted transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                {[
+                  { id: 'theme-quest', label: 'Classic Quest', colors: ['bg-[#2563eb]', 'bg-[#1e293b]'] },
+                  { id: 'theme-midnight', label: 'Midnight Neon', colors: ['bg-[#8b5cf6]', 'bg-[#020617]'] },
+                  { id: 'theme-forest', label: 'Evergreen Nature', colors: ['bg-[#10b981]', 'bg-[#f3f4f6]'] },
+                  { id: 'theme-sunset', label: 'Velvet Sunset', colors: ['bg-[#f43f5e]', 'bg-[#fff7ed]'] },
+                  { id: 'theme-monochrome', label: 'High Contrast', colors: ['bg-[#000000]', 'bg-[#ffffff]'] },
+                ].map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => {
+                      setTheme(t.id);
+                      setShowThemes(false);
+                    }}
+                    className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all ${
+                      theme === t.id ? 'border-accent bg-accent-light' : 'border-border bg-surface hover:border-accent/40'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex -space-x-2">
+                        <div className={`w-6 h-6 rounded-full border border-white ${t.colors[0]}`} />
+                        <div className={`w-6 h-6 rounded-full border border-white ${t.colors[1]}`} />
+                      </div>
+                      <span className={`text-sm font-bold ${theme === t.id ? 'text-accent' : 'text-secondary'}`}>
+                        {t.label}
+                      </span>
+                    </div>
+                    {theme === t.id && <Check size={18} className="text-accent" />}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Main Content */}
       <main className="flex-1 min-h-0 flex flex-col p-4 md:p-10 gap-4 md:gap-6 max-w-[1024px] mx-auto w-full box-border overflow-hidden">
@@ -282,12 +425,12 @@ export default function App() {
                       "{game.quote}"
                     </p>
                     <button
-                      onClick={() => startNewGame(true)}
+                      onClick={() => setShowCategories(true)}
                       disabled={isLoading}
                       className="mt-8 btn-base bg-accent text-white hover:bg-accent/90 h-12 px-10 flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       {isLoading && <RefreshCw size={16} className="animate-spin" />}
-                      Next Challenge
+                      Next AI Challenge
                     </button>
                   </motion.div>
                 )}

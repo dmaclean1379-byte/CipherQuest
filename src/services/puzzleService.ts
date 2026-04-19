@@ -4,6 +4,7 @@
  */
 
 import { PuzzleCell, CipherMap, GameState } from '../types';
+export { DEFAULT_QUOTES } from '../data/quotes';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
@@ -46,11 +47,3 @@ export function createPuzzle(quote: string, author: string): GameState {
     endTime: null,
   };
 }
-
-export const DEFAULT_QUOTES = [
-  { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
-  { text: "Knowledge is power.", author: "Sir Francis Bacon" },
-  { text: "Success is not final, failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill" },
-  { text: "Life is what happens when you're busy making other plans.", author: "John Lennon" },
-  { text: "Be the change that you wish to see in the world.", author: "Mahatma Gandhi" },
-];

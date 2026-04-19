@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { memo } from 'react';
 import { motion } from 'motion/react';
 import { PuzzleCell as PuzzleCellType } from '../types';
 
 interface PuzzleCellProps {
-  key?: string;
   cell: PuzzleCellType;
   isSelected: boolean;
   isFocused: boolean;
@@ -15,7 +15,7 @@ interface PuzzleCellProps {
   onClick: () => void;
 }
 
-export default function PuzzleCell({ cell, isSelected, isFocused, isCorrect, onClick }: PuzzleCellProps) {
+const PuzzleCell = memo(({ cell, isSelected, isFocused, isCorrect, onClick }: PuzzleCellProps) => {
   if (cell.isPunctuation) {
     return (
       <div className="w-4 md:w-6 h-12 md:h-16 flex items-center justify-center pb-4 md:pb-6 text-xl md:text-3xl font-bold text-primary">
@@ -56,4 +56,6 @@ export default function PuzzleCell({ cell, isSelected, isFocused, isCorrect, onC
       </div>
     </motion.div>
   );
-}
+});
+
+export default PuzzleCell;

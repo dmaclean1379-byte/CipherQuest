@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { memo } from 'react';
 import { motion } from 'motion/react';
 import { PuzzleCell as PuzzleCellType } from '../types';
 import PuzzleCell from './PuzzleCell';
@@ -15,7 +16,7 @@ interface PuzzleGridProps {
   checkStatus: (cell: PuzzleCellType) => boolean | null;
 }
 
-export default function PuzzleGrid({ cells, selectedNumber, focusedId, onCellClick, checkStatus }: PuzzleGridProps) {
+const PuzzleGrid = memo(({ cells, selectedNumber, focusedId, onCellClick, checkStatus }: PuzzleGridProps) => {
   // Group cells by words (simple logic: split by spaces)
   const words: PuzzleCellType[][] = [];
   let currentWord: PuzzleCellType[] = [];
@@ -57,4 +58,6 @@ export default function PuzzleGrid({ cells, selectedNumber, focusedId, onCellCli
       ))}
     </div>
   );
-}
+});
+
+export default PuzzleGrid;
