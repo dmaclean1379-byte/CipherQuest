@@ -1,0 +1,6 @@
+{
+  "name": "CryptoCipher: Cryptogram Puzzle",
+  "description": "A refined, Android-inspired cryptogram game where you decode hidden quotes using substitution ciphers. Features AI-generated puzzles, hints, and a polished Material Design interface.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
