@@ -7,6 +7,22 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="theme-color" content="#1e293b" />
     <link rel="manifest" href="/manifest.json" />
+    <script>
+      // Force unregister all service workers to fix update issues
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for(let registration of registrations) {
+            registration.unregister();
+          }
+        });
+      }
+      // Attempt to clear caches
+      if ('caches' in window) {
+        caches.keys().then(function(names) {
+          for (let name of names) caches.delete(name);
+        });
+      }
+    </script>
     <title>CryptoCipher: Decode the Wisdom</title>
   </head>
   <body>

@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { RefreshCw, Lightbulb, Trophy, Brain, BarChart3, X, Film, Music, Lightbulb as FactIcon, Quote, Palette, Check } from 'lucide-react';
+import { RefreshCw, Lightbulb, Trophy, Brain, BarChart3, X, Film, Music, Lightbulb as FactIcon, Quote, Palette, Check, Download } from 'lucide-react';
 import { GameState, PuzzleCell, UserStats } from './types';
 import { createPuzzle, DEFAULT_QUOTES } from './services/puzzleService';
 import { generateAIQuote } from './services/geminiService';
@@ -14,6 +14,16 @@ import Keyboard from './components/Keyboard';
 
 export default function App() {
   const [game, setGame] = useState<GameState | null>(null);
+  const [quoteHistory, setQuoteHistory] = useState<string[]>(() => {
+    const saved = localStorage.getItem('cipher-quest-history');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const historyRef = useRef<string[]>([]);
+  
+  useEffect(() => {
+    historyRef.current = quoteHistory;
+  }, [quoteHistory]);
+
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showCategories, setShowCategories] = useState(false);
@@ -24,6 +34,27 @@ export default function App() {
     const saved = localStorage.getItem('cipher-quest-stats');
     return saved ? JSON.parse(saved) : { puzzlesCompleted: 0, totalHintsUsed: 0 };
   });
+  
+  // PWA Install Prompt
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
 
   useEffect(() => {
     localStorage.setItem('cipher-quest-stats', JSON.stringify(stats));
@@ -44,19 +75,35 @@ export default function App() {
     setShowCategories(false);
     setFeedback(null);
     try {
-      let quoteData;
+      let quoteData: { text: string; author: string } | null = null;
+      
       if (useAI) {
         quoteData = await generateAIQuote(category);
       }
       
       // Fallback to internal quotes if AI fails or wasn't requested
       if (!quoteData) {
-        quoteData = DEFAULT_QUOTES[Math.floor(Math.random() * DEFAULT_QUOTES.length)];
+        // Filter out quotes that are in the history
+        const availableQuotes = DEFAULT_QUOTES.filter(q => !historyRef.current.includes(q.text));
+        
+        // If we've seen everything, reset history
+        const sourcePool = availableQuotes.length > 0 ? availableQuotes : DEFAULT_QUOTES;
+        quoteData = sourcePool[Math.floor(Math.random() * sourcePool.length)];
       }
       
-      const newGame = createPuzzle(quoteData.text, quoteData.author);
-      setGame(newGame);
-      setFocusedId(newGame.cells.find(c => !c.isPunctuation)?.id || null);
+      // Add to history and maintain size (last 30 quotes)
+      if (quoteData) {
+        const text = quoteData.text;
+        setQuoteHistory(prev => {
+          const newHistory = [text, ...prev.filter(q => q !== text)].slice(0, 30);
+          localStorage.setItem('cipher-quest-history', JSON.stringify(newHistory));
+          return newHistory;
+        });
+
+        const newGame = createPuzzle(quoteData.text, quoteData.author, category || "Quote");
+        setGame(newGame);
+        setFocusedId(newGame.cells.find(c => !c.isPunctuation)?.id || null);
+      }
     } catch (err) {
       console.error(err);
       setFeedback("Error generating puzzle. Try again.");
@@ -189,16 +236,25 @@ export default function App() {
   }, []);
 
   return (
-    <div className={`h-[100dvh] flex flex-col bg-bg-app select-none overflow-hidden pb-[env(safe-area-inset-bottom)] ${theme}`}>
+    <div className={`h-[100dvh] flex flex-col bg-bg-app select-none overflow-hidden pb-[env(safe-area-inset-bottom)] touch-none ${theme}`}>
       {/* Header */}
-      <header className="px-4 md:px-10 py-3 md:py-4 flex items-center justify-between border-b border-border bg-surface shrink-0 z-20 pt-[env(safe-area-inset-top)]">
+      <header className="px-4 md:px-10 py-2 md:py-3 flex items-center justify-between border-b border-border bg-surface shrink-0 z-20 pt-[env(safe-area-inset-top)]">
         <div className="flex items-center gap-2">
-          <h1 className="text-xl md:text-2xl font-extrabold tracking-tight text-accent">
+          <h1 className="text-lg md:text-xl font-extrabold tracking-tight text-accent">
             CipherQuest
           </h1>
         </div>
         
         <div className="flex gap-1.5 md:gap-3">
+          {deferredPrompt && (
+            <button
+              onClick={handleInstallClick}
+              className="btn-base px-3 h-9 md:h-10 bg-success text-white hover:bg-success/90 flex items-center gap-1.5 text-xs md:text-sm animate-pulse"
+            >
+              <Download size={14} />
+              <span className="hidden sm:inline">Install App</span>
+            </button>
+          )}
           <button
             onClick={() => setShowThemes(true)}
             className="btn-base px-3 h-9 md:h-10 border border-border bg-surface text-secondary hover:bg-bg-app flex items-center gap-1.5 text-xs md:text-sm"
@@ -355,39 +411,43 @@ export default function App() {
       </AnimatePresence>
 
       {/* Main Content */}
-      <main className="flex-1 min-h-0 flex flex-col p-4 md:p-10 gap-4 md:gap-6 max-w-[1024px] mx-auto w-full box-border overflow-hidden">
-        {/* Stats Bar */}
+      <main className="flex-1 min-h-0 flex flex-col p-3 md:p-8 gap-3 md:gap-6 max-w-[1024px] mx-auto w-full box-border overflow-hidden">
+        {/* Stats Bar Container */}
         {game && (
-          <div className="flex flex-col gap-3">
-            <div className="grid grid-cols-2 md:flex md:gap-8 bg-surface border border-border px-4 py-3 md:px-6 md:py-4 rounded-xl shadow-sm shrink-0 gap-y-2">
-              <div className="flex flex-col">
-                <span className="text-[10px] md:text-[11px] uppercase font-bold text-muted tracking-wider">Difficulty</span>
-                <span className="text-sm md:text-lg font-bold text-primary leading-tight">{game.difficulty}</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] md:text-[11px] uppercase font-bold text-muted tracking-wider">Progress</span>
-                <span className="text-sm md:text-lg font-bold text-primary leading-tight">
-                  {game.cells.filter(c => !c.isPunctuation && c.userGuess).length} / {game.cells.filter(c => !c.isPunctuation).length}
-                </span>
-              </div>
-              <div className="flex flex-col col-span-2 md:ml-auto md:text-right">
-                <span className="text-[10px] md:text-[11px] uppercase font-bold text-muted tracking-wider">Quote Author</span>
-                <span className="text-sm md:text-lg font-bold text-primary leading-tight line-clamp-1">{game.author}</span>
-              </div>
-            </div>
+          <div className="flex flex-col gap-2 shrink-0">
+            <div className="flex items-center bg-surface border border-border px-2 py-1.5 md:px-5 md:py-2 rounded-lg shadow-sm gap-2 md:gap-3 overflow-hidden">
+              <div className="flex items-center gap-2 md:gap-5 min-w-0 flex-1">
+                {/* Difficulty */}
+                <div className="flex items-center gap-1 whitespace-nowrap">
+                  <span className="text-[8px] md:text-[9px] uppercase font-bold text-muted hidden sm:inline">Diff:</span>
+                  <span className="text-[10px] md:text-xs font-bold text-primary">{game.difficulty}</span>
+                </div>
+                
+                <div className="w-px h-3 bg-border shrink-0" />
+                
+                {/* Dynamic Source Label */}
+                <div className="flex items-center gap-1 min-w-0 flex-1">
+                  <span className="text-[8px] md:text-[9px] uppercase font-bold text-muted hidden sm:inline text-nowrap">
+                    {game.category === 'Movie Title' ? 'Movie:' : 
+                     game.category === 'Song Title' ? 'Artist:' : 
+                     game.category === 'Fun Fact' ? 'Facts:' : 'Author:'}
+                  </span>
+                  <span className="text-[10px] md:text-xs font-bold text-secondary truncate italic">"{game.author}"</span>
+                </div>
 
-            <div className="flex gap-4 md:gap-6 bg-accent-light/30 border border-accent/10 px-4 py-2 rounded-lg shrink-0">
-              <div className="flex items-center gap-2">
-                <BarChart3 size={14} className="text-accent" />
-                <span className="text-xs font-bold text-secondary uppercase tracking-tight">Lifetime Stats:</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs font-medium text-muted">Completed:</span>
-                <span className="text-xs font-bold text-primary">{stats.puzzlesCompleted}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs font-medium text-muted">Hints:</span>
-                <span className="text-xs font-bold text-primary">{stats.totalHintsUsed}</span>
+                <div className="w-px h-3 bg-border shrink-0" />
+
+                {/* Lifetime Stats */}
+                <div className="flex items-center gap-2 md:gap-4 text-secondary shrink-0">
+                  <div className="flex items-center gap-1">
+                    <Trophy size={11} className="text-accent" />
+                    <span className="text-[10px] md:text-xs font-bold">{stats.puzzlesCompleted}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Lightbulb size={11} className="text-secondary" />
+                    <span className="text-[10px] md:text-xs font-bold">{stats.totalHintsUsed}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

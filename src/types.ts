@@ -23,6 +23,7 @@ export interface GameState {
   cells: PuzzleCell[];
   quote: string;
   author: string;
+  category: string;
   difficulty: 'Easy' | 'Medium' | 'Hard';
   isSolved: boolean;
   startTime: number | null;

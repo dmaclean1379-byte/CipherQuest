@@ -86,7 +86,14 @@
 
 @layer components {
   .btn-base {
-    @apply px-4 py-2 rounded-md transition-all font-semibold text-sm;
+    @apply px-4 py-2 rounded-lg transition-all font-semibold text-sm cursor-pointer active:scale-95;
+  }
+  
+  /* Hide UI elements when in standalone (installed) mode for true "app" feel */
+  @media (display-mode: standalone) {
+    .pwa-hide {
+      display: none;
+    }
   }
   
   .card-shadow {

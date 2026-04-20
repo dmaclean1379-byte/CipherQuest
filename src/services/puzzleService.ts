@@ -19,7 +19,7 @@ export function generateCipherMap(): CipherMap {
   return map;
 }
 
-export function createPuzzle(quote: string, author: string): GameState {
+export function createPuzzle(quote: string, author: string, category: string = "Quote"): GameState {
   const cipherMap = generateCipherMap();
   const cells: PuzzleCell[] = [];
   const upperQuote = quote.toUpperCase();
@@ -41,6 +41,7 @@ export function createPuzzle(quote: string, author: string): GameState {
     cells,
     quote,
     author,
+    category,
     difficulty: quote.length < 50 ? 'Easy' : quote.length < 100 ? 'Medium' : 'Hard',
     isSolved: false,
     startTime: Date.now(),

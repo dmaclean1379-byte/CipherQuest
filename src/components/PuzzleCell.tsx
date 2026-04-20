@@ -18,7 +18,7 @@ interface PuzzleCellProps {
 const PuzzleCell = memo(({ cell, isSelected, isFocused, isCorrect, onClick }: PuzzleCellProps) => {
   if (cell.isPunctuation) {
     return (
-      <div className="w-4 md:w-6 h-12 md:h-16 flex items-center justify-center pb-4 md:pb-6 text-xl md:text-3xl font-bold text-primary">
+      <div className="w-3 md:w-5 h-12 md:h-16 flex items-center justify-center pb-4 md:pb-6 text-lg md:text-2xl font-semibold text-secondary">
         {cell.realLetter}
       </div>
     );
@@ -37,13 +37,13 @@ const PuzzleCell = memo(({ cell, isSelected, isFocused, isCorrect, onClick }: Pu
       whileTap={{ scale: 0.95 }}
       onClick={onClick}
       className={`
-        relative w-9 h-12 md:w-12 md:h-16 flex flex-col items-center justify-between cursor-pointer transition-all
+        relative w-7 h-10 md:w-11 md:h-14 flex flex-col items-center justify-between cursor-pointer transition-all
         ${isSelected ? 'bg-accent-light' : ''}
         ${isFocused ? 'ring-2 ring-accent ring-inset' : ''}
       `}
     >
       <div className={`
-        w-full flex-1 flex items-center justify-center text-xl md:text-3xl font-bold uppercase
+        w-full flex-1 flex items-center justify-center text-lg md:text-2xl font-bold uppercase
         border-b-2 transition-colors ${textColor}
         ${isSelected || isFocused ? 'border-accent' : 'border-muted'}
         ${isCorrect === true && cell.userGuess ? 'border-success' : ''}
@@ -51,7 +51,7 @@ const PuzzleCell = memo(({ cell, isSelected, isFocused, isCorrect, onClick }: Pu
       `}>
         {cell.userGuess || (isFocused ? '_' : '')}
       </div>
-      <div className="h-4 md:h-6 flex items-center justify-center text-[10px] md:text-sm font-semibold text-secondary">
+      <div className="h-3 md:h-5 flex items-center justify-center text-[9px] md:text-sm font-semibold text-secondary">
         {cell.number}
       </div>
     </motion.div>

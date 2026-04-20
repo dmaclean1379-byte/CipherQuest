@@ -1,21 +1,25 @@
 {
   "name": "CryptoCipher",
-  "short_name": "CryptoCipher",
-  "description": "Decode hidden quotes using substitution ciphers.",
-  "start_url": "./",
+  "short_name": "Crypto",
+  "description": "Premium cryptogram substitution puzzles with infinite AI challenges.",
+  "start_url": ".",
   "display": "standalone",
-  "background_color": "#1e293b",
+  "orientation": "portrait",
+  "background_color": "#020617",
   "theme_color": "#2563eb",
   "icons": [
     {
-      "src": "https://picsum.photos/seed/crypto/192/192",
+      "src": "https://picsum.photos/seed/crypto-q/192/192",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "https://picsum.photos/seed/crypto/512/512",
+      "src": "https://picsum.photos/seed/crypto-q/512/512",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "categories": ["games", "puzzles", "education"]
 }
