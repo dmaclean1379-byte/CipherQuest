@@ -35,7 +35,7 @@ const PuzzleGrid = memo(({ cells, selectedNumber, focusedId, onCellClick, checkS
   if (currentWord.length > 0) words.push(currentWord);
 
   return (
-    <div className="flex flex-wrap gap-x-1.5 md:gap-x-2 gap-y-2.5 md:gap-y-4 justify-center max-w-4xl mx-auto p-3 md:p-6 select-none">
+    <div className="flex flex-wrap gap-x-1.5 md:gap-x-2 gap-y-2.5 md:gap-y-4 justify-center w-full mx-auto p-3 md:p-6 select-none overflow-visible">
       {words.map((word, wordIndex) => (
         <motion.div
           key={`word-${wordIndex}`}

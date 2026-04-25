@@ -7,6 +7,33 @@ import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 
+export async function generateAIWordList(category: string = "Words"): Promise<{ category: string; words: string[] } | null> {
+  try {
+    const prompt = `Generate a list of 8 unique and interesting words related to the category: "${category}".
+    The words should be between 3 and 10 letters long.
+    Return ONLY a JSON object: { "category": "Specific Theme Name", "words": ["WORD1", "WORD2", ...] }.`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        temperature: 0.8,
+      }
+    });
+
+    const data = JSON.parse(response.text || '{}');
+    if (!data.words || !Array.isArray(data.words)) return null;
+    return {
+      category: data.category || category,
+      words: data.words.map((w: string) => w.toUpperCase().replace(/[^A-Z]/g, ''))
+    };
+  } catch (error) {
+    console.error("Failed to generate AI word list:", error);
+    return null;
+  }
+}
+
 export async function generateAIQuote(category: string = "Quote"): Promise<{ text: string; author: string } | null> {
   try {
     const prompt = `CRITICAL: You are an expert at generating content for the following specific category: "${category}".

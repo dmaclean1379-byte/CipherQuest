@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+export type GameMode = 'CIPHER' | 'WORDSEARCH';
+
 export interface PuzzleCell {
   id: string;
   realLetter: string;    // The actual answer (e.g., 'T')
@@ -11,12 +13,25 @@ export interface PuzzleCell {
   isPunctuation: boolean; // true if it's space, comma, etc.
 }
 
-export interface CipherMap {
-  [letter: string]: number;
+export interface WordSearchCell {
+  char: string;
+  row: number;
+  col: number;
+  isFound: boolean;
 }
 
-export interface ReverseCipherMap {
-  [number: number]: string;
+export interface WordToFind {
+  word: string;
+  isFound: boolean;
+  start?: { r: number; c: number };
+  end?: { r: number; c: number };
+}
+
+export interface WordSearchState {
+  grid: WordSearchCell[][];
+  words: WordToFind[];
+  category: string;
+  isSolved: boolean;
 }
 
 export interface GameState {
@@ -28,6 +43,10 @@ export interface GameState {
   isSolved: boolean;
   startTime: number | null;
   endTime: number | null;
+}
+
+export interface CipherMap {
+  [letter: string]: number;
 }
 
 export interface UserStats {
