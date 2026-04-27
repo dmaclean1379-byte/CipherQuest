@@ -3,7 +3,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type GameMode = 'CIPHER' | 'WORDSEARCH';
+export type GameMode = 'LOBBY' | 'CIPHER' | 'WORDSEARCH' | 'WORDLADDER' | 'DAILY_CIPHER';
+
+export interface WordLadderStep {
+  word: string;
+  isTarget: boolean;
+  isUser: boolean;
+}
+
+export interface WordLadderState {
+  startWord: string;
+  endWord: string;
+  steps: string[]; // User's path including startWord
+  targetPath: string[]; // Correct path (for reference/hints)
+  isSolved: boolean;
+}
 
 export interface PuzzleCell {
   id: string;
@@ -52,4 +66,5 @@ export interface CipherMap {
 export interface UserStats {
   puzzlesCompleted: number;
   totalHintsUsed: number;
+  dailyCompletedDate: string | null;
 }

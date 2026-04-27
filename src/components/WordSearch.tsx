@@ -12,6 +12,7 @@ interface WordSearchProps {
   gameState: WordSearchState;
   onSolve: () => void;
   onNewGame: () => void;
+  onUpdate?: (grid: WordSearchCell[][], words: { word: string; isFound: boolean }[]) => void;
 }
 
 interface Selection {
@@ -19,7 +20,7 @@ interface Selection {
   end: { r: number; c: number };
 }
 
-const WordSearch = memo(({ gameState, onSolve, onNewGame }: WordSearchProps) => {
+const WordSearch = memo(({ gameState, onSolve, onNewGame, onUpdate }: WordSearchProps) => {
   const [words, setWords] = useState(gameState.words);
   const [grid, setGrid] = useState(gameState.grid);
   const [selection, setSelection] = useState<Selection | null>(null);
@@ -99,6 +100,10 @@ const WordSearch = memo(({ gameState, onSolve, onNewGame }: WordSearchProps) => 
         newGrid[r][c] = { ...newGrid[r][c], isFound: true };
       });
       setGrid(newGrid);
+      
+      if (onUpdate) {
+        onUpdate(newGrid, newWords);
+      }
 
       if (newWords.every(w => w.isFound)) {
         onSolve();
